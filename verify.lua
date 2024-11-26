@@ -7,7 +7,7 @@ local Humanoid = Character:WaitForChild("Humanoid") --// Waiting for Humanoid, s
 local hrp = Character:WaitForChild("HumanoidRootPart") --// Our Root Part
 local RootJoint = Character:WaitForChild('HumanoidRootPart'):WaitForChild('RootJoint') --// Root Joint Getting
 local RootJointC0 = RootJoint.C0
-local cam = workspace.CurrentCamera --// This would be our current local camera okay?
+local cam = workspace.CurrentCamera --// This would be our current local camera
 --// VARIABLES
 local doubleJumpEnabled = false --// bool
 local Sliding = false --// Bool
@@ -53,7 +53,7 @@ end
 local function GetHitbox(Range) --// A Very Simple Magnitude Based Hitbox -- READ BELOW IF YOU DONT UNDERSTAND
 	local tab = {}
 	for i,v in pairs(workspace:GetChildren()) do --// Getting Childrens in workspace
-		if v:IsA('Model') and v:FindFirstChild('Humanoid') and v.Humanoid.Health > 0 --// checking if model and has health higher than 0 okay?
+		if v:IsA('Model') and v:FindFirstChild('Humanoid') and v.Humanoid.Health > 0 --// checking if model and has health higher than 0
 			and v ~= Character and v:FindFirstChild('HumanoidRootPart') and
 			(v.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude < Range --// Range functional argument check
 		then
@@ -98,7 +98,7 @@ Functions = { --// Above table
 		end
 		bodyVel.Velocity = direction * (mass * Speed)
 		Functions.CreateCooldown("Dash", 1)
-		--// Read above please
+		--// Just read above, please
 	end,
 	["Double Jump"] = function() --// Double jump, change state and stuff if state is freefal and no cooldown
 		if doubleJumpEnabled then
@@ -110,7 +110,7 @@ Functions = { --// Above table
 			end
 		end
 	end,
-	["Slide"] = function() --// Sliding with body velocity, same thing different animationa and better control
+	["Slide"] = function() --// Sliding with body velocity, same thing different animation and better control
 		if Character:FindFirstChild("Slide") then return end
 		local EHMMM = 5
 		local Power = 16
@@ -138,7 +138,7 @@ Functions = { --// Above table
 		until EHMMM == Power --or not character:FindFirstChild('C')
 		game:GetService("Debris"):AddItem(bodyVel, 0.15) 
 		Functions.CreateCooldown("Slide", 0.15)
-		wait(0.1)
+		task.wait(0.1)
 		Sliding = false	
 	end,
 }
@@ -163,17 +163,17 @@ local function Normal() --// Normal Combo M1s, Play Animation & Then get hitbox/
 	print('LMB'..Combo.Value)
 	if Combo.Value < MaxLMBs then
 		LMBsAnim["LMB"..Combo.Value]:Play()
-		wait(0.25) --// how fast
+		task.wait(0.25) --// how fast
 		local hit = GetHitbox(8)
 		Remote:FireServer("DoDamage", hit, 15)
 	elseif Combo.Value >= MaxLMBs then
 		Combo:Destroy()
 		LMBsAnim["LMB"..Combo.Value]:Play()
-		wait(0.25) --// how fast
+		task.wait(0.25) --// how fast
 		local hit = GetHitbox(8)
 		Remote:FireServer("DoDamage", hit, 15)
 		NormalCD = true
-		wait(2.5)
+		task.wait(2.5)
 		NormalCD = false
 	end
 end
@@ -181,11 +181,11 @@ local function Heavy() --// Heavy same as above but heavy more damage
 	if HeavyCD then return end
 	HeavyCD = true
 	HeavyAnim:Play()
-	wait(0.15)
+	task.wait(0.15)
 	local hit = GetHitbox(8)
 	print('Heavy')
 	Remote:FireServer("DoDamage", hit, 15)
-	wait(2.5)
+	task.wait(2.5)
 	HeavyCD = false
 end
 local function Parry() --// Parry check backend
