@@ -1,70 +1,69 @@
 --// Use the game to test it ingame, there are animations and server part which exists there. thanks.
-local Player = game:GetService('Players').LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local cam = workspace.CurrentCamera
-local hrp = Character:WaitForChild("HumanoidRootPart")
-local doubleJumpEnabled = false
-local Sliding = false
-local jumpCooldown = 3.0
-local plr = game.Players.LocalPlayer
-local Jumped = false --Debounce
-local RootJoint = Character:WaitForChild('HumanoidRootPart'):WaitForChild('RootJoint')
-local Force = nil
-local Direction = nil
+local Player = game:GetService('Players').LocalPlayer --// This is our localplayer, US
+local UserInputService = game:GetService("UserInputService") --// Roblox InputService
+local RunService = game:GetService("RunService") --// Roblox RunService
+local Character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait() --// We are Getting the Character :)
+local Humanoid = Character:WaitForChild("Humanoid") --// Waiting for Humanoid, so we can do stuff
+local hrp = Character:WaitForChild("HumanoidRootPart") --// Our Root Part
+local RootJoint = Character:WaitForChild('HumanoidRootPart'):WaitForChild('RootJoint') --// Root Joint Getting
+local RootJointC0 = RootJoint.C0
+local cam = workspace.CurrentCamera --// This would be our current local camera okay?
+--// VARIABLES
+local doubleJumpEnabled = false --// bool
+local Sliding = false --// Bool
+local jumpCooldown = 3.0 --// Cooldown Number
+local Jumped = false -- Cooldown Debounce
+local Force = nil --// Variable for force dash
+local Direction = nil --// Variable for direction dash
 local V1 = 0
 local V2 = 0
-local RootJointC0 = RootJoint.C0
-local Remote = script:WaitForChild('RemoteEvent')
+local Remote = script:WaitForChild('RemoteEvent') --// Our Precious Remote EVent
+--// Our Left Mouse Button Animations
 local LMBs = {
-	LMB1 = "rbxassetid://138072732459393";
-	LMB2 = "rbxassetid://138072732459393";
-	LMB3 = "rbxassetid://138072732459393";
+	LMB1 = "rbxassetid://14048124895";
+	LMB2 = "rbxassetid://14048124895";
+	LMB3 = "rbxassetid://14048124895";
 };
 local MaxLMBs = 3 --// Max LMBS
-local HeavyAnim = Humanoid:LoadAnimation(script:WaitForChild('Heavy'))
-local ParryAnim = Humanoid:LoadAnimation(script:WaitForChild('Heavy'))
-local LMBsAnim = {}
-for i,v in pairs(LMBs) do
+local HeavyAnim = Humanoid:LoadAnimation(script:WaitForChild('Heavy')) --// Animation
+local ParryAnim = Humanoid:LoadAnimation(script:WaitForChild('Parry')) --// animation
+local LMBsAnim = {} --// Table
+for i,v in pairs(LMBs) do --// We are making it into animations, adding it to a table to be played later :)
 	local anim = Instance.new('Animation')
 	anim.AnimationId = v
 	local Load = Humanoid:LoadAnimation(anim)
 	LMBsAnim[i] = Load
 end
-
-local function GetHitbox(Range)
-	local tab = {}
-	for i,v in pairs(workspace:GetChildren()) do
-		if v:IsA('Model') and v:FindFirstChild('Humanoid') and v.Humanoid.Health > 0
-			and v ~= Character and v:FindFirstChild('HumanoidRootPart') and
-			(v.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude < Range
-		then
-			table.insert(tab, v)
-		end
-	end
-	return tab
-end
-local NormalCD = false
-local HeavyCD = false
-local ParryCD = false
+local NormalCD = false --// Cooldown
+local HeavyCD = false --// cooldown
+local ParryCD = false --// Cooldown
 --// Animations, make sure they exists
-local Animations = {
+local Animations = { --// more Animations
 	["AirDash"] = script:WaitForChild('AirDash');
 	["Roll"] = script:WaitForChild('Roll');
 	["Slide"] = script:WaitForChild('Slide');
 }
-local anim = {}
+local anim = {} --// same Loading as above
 for i,v in pairs(Animations) do
 	if v then
 		local load = Humanoid:LoadAnimation(v)
 		anim[i] = load
 	end
 end
-local Functions;
---// Functions
-Functions = {
+local function GetHitbox(Range) --// A Very Simple Magnitude Based Hitbox -- READ BELOW IF YOU DONT UNDERSTAND
+	local tab = {}
+	for i,v in pairs(workspace:GetChildren()) do --// Getting Childrens in workspace
+		if v:IsA('Model') and v:FindFirstChild('Humanoid') and v.Humanoid.Health > 0 --// checking if model and has health higher than 0 okay?
+			and v ~= Character and v:FindFirstChild('HumanoidRootPart') and
+			(v.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude < Range --// Range functional argument check
+		then
+			table.insert(tab, v) --// Adding it to the table then
+		end
+	end
+	return tab --// returning table :D
+end
+local Functions; --// nil for now, but will be a table.
+Functions = { --// Above table
 	["CreateCooldown"] = function(Name, Time)
 		local ins = Instance.new('StringValue')
 		ins.Name = Name
@@ -79,28 +78,29 @@ Functions = {
 	end;
 	["Dash"] = function(Speed, Time)
 		if Character:FindFirstChild("Dash") then return end
-		local bodyVel = Instance.new("BodyVelocity")
-		bodyVel.Name = "Dash"
-		game.Debris:AddItem(bodyVel, Time)
-		local direction = Character.Humanoid.MoveDirection * Vector3.new(2.3,0,2.3)
+		local bodyVel = Instance.new("BodyVelocity") --// IF YOU SAY ITS DEPRECATED, IT DOESN'T MATTER, IT WORKS AND CAN BE USED, I AM NOT SCRIPTING A PAID SERVICE HERE, IT IS JUST FOR VERIFICATION.
+		bodyVel.Name = "Dash" --// Body Velocity Name
+		game.Debris:AddItem(bodyVel, Time) --// Adding to debris
+		local direction = Character.Humanoid.MoveDirection * Vector3.new(2.3,0,2.3) --// Direction
 		if direction == Vector3.new(0,0,0) then
 			direction = Character.Head.CFrame.LookVector * Vector3.new(2.3,0,2.3)
 		end
 		anim.AirDash:Play()
-		local mousecf = game.Players.LocalPlayer:GetMouse().Hit
+		local mousecf = game.Players.LocalPlayer:GetMouse().Hit 
 		direction = Character.Humanoid.MoveDirection * Vector3.new(2.3,2.3,2.3)
 		bodyVel.Parent = Character.PrimaryPart
 		bodyVel.MaxForce = Vector3.new(25000,0,25000)
 		local mass = 0
-		for _,v in pairs(Character:GetChildren()) do
+		for _,v in pairs(Character:GetChildren()) do --// Making character baseparts massless
 			if v:IsA("BasePart") and v.Massless == false then
 				mass += v.Mass
 			end
 		end
 		bodyVel.Velocity = direction * (mass * Speed)
 		Functions.CreateCooldown("Dash", 1)
+		--// Read above please
 	end,
-	["Double Jump"] = function()
+	["Double Jump"] = function() --// Double jump, change state and stuff if state is freefal and no cooldown
 		if doubleJumpEnabled then
 			if Humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
 				if Character:FindFirstChild("DoubleJump") then return end
@@ -110,7 +110,7 @@ Functions = {
 			end
 		end
 	end,
-	["Slide"] = function()
+	["Slide"] = function() --// Sliding with body velocity, same thing different animationa and better control
 		if Character:FindFirstChild("Slide") then return end
 		local EHMMM = 5
 		local Power = 16
@@ -142,7 +142,7 @@ Functions = {
 		Sliding = false	
 	end,
 }
-local function Normal()
+local function Normal() --// Normal Combo M1s, Play Animation & Then get hitbox/attack
 	if NormalCD then return end
 	local Combo = Character:FindFirstChild('Combo')
 	if Combo then
@@ -177,7 +177,7 @@ local function Normal()
 		NormalCD = false
 	end
 end
-local function Heavy()
+local function Heavy() --// Heavy same as above but heavy more damage
 	if HeavyCD then return end
 	HeavyCD = true
 	HeavyAnim:Play()
@@ -188,7 +188,7 @@ local function Heavy()
 	wait(2.5)
 	HeavyCD = false
 end
-local function Parry()
+local function Parry() --// Parry check backend
 	if HeavyCD then return end
 	ParryCD = true
 	print('Parry')
@@ -198,7 +198,7 @@ local function Parry()
 end
 local func = Functions
 --// State Change
-Humanoid.StateChanged:Connect(function(_oldState, newState)
+Humanoid.StateChanged:Connect(function(_oldState, newState) --// Double Jump & for slide
 	if newState == Enum.HumanoidStateType.Jumping then
 		if Sliding then
 			local Push = Character.HumanoidRootPart:FindFirstChild('Sliding')
@@ -216,8 +216,8 @@ Humanoid.StateChanged:Connect(function(_oldState, newState)
 	end
 end)
 --// Jump Cooldown
-UserInputService.JumpRequest:Connect(function()
-	local char = plr.Character
+UserInputService.JumpRequest:Connect(function() --// Jump Cooldown
+	local char = Player.Character
 	if not Jumped then
 		if char.Humanoid.FloorMaterial == Enum.Material.Air then return end
 		Jumped = true
@@ -228,38 +228,39 @@ UserInputService.JumpRequest:Connect(function()
 		char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 	end
 end)
-local crouching = false
-local Crouch = Humanoid:LoadAnimation(script.Crouch)
-local walkAnim = Humanoid:LoadAnimation(script.CrouchWalk)
+--// Below is input handling
+local crouching = false --// Crouch CD
+local Crouch = Humanoid:LoadAnimation(script.Crouch) --// animations
+local walkAnim = Humanoid:LoadAnimation(script.CrouchWalk) --// walk animation
 UserInputService.InputBegan:Connect(function(inputObject, gc)
 	if gc then return end
 	task.spawn(function()
 		if inputObject.KeyCode and inputObject.KeyCode ~= Enum.KeyCode.Unknown then
 			local a = inputObject.KeyCode
 			local key = tostring(a):split(".")
-			func.CreateKey(tostring(key[3]))
+			func.CreateKey(tostring(key[3])) --// this is to detect keys, could be done better but wtv
 		end
 	end)
-	if inputObject.UserInputType == Enum.UserInputType.MouseButton1 then
+	if inputObject.UserInputType == Enum.UserInputType.MouseButton1 then --// M1s
 		Normal()
 	end
-	if inputObject.UserInputType == Enum.UserInputType.MouseButton2 then
+	if inputObject.UserInputType == Enum.UserInputType.MouseButton2 then --// Heavy
 		Heavy()
 	end
 
-	if inputObject.KeyCode == Enum.KeyCode.R then
+	if inputObject.KeyCode == Enum.KeyCode.R then --// Parry
 		Parry()
 	end
-	if inputObject.KeyCode == Enum.KeyCode.Space then
+	if inputObject.KeyCode == Enum.KeyCode.Space then --// double Jump
 		func["Double Jump"]()
 	end
-	if inputObject.KeyCode == Enum.KeyCode.Q then
+	if inputObject.KeyCode == Enum.KeyCode.Q then --// Dash with arguments
 		func.Dash(4.5, 0.25)
 	end
-	if inputObject.KeyCode == Enum.KeyCode.T then
+	if inputObject.KeyCode == Enum.KeyCode.T then ---// Slide
 		func.Slide()
 	end
-	if inputObject.KeyCode == Enum.KeyCode.C then
+	if inputObject.KeyCode == Enum.KeyCode.C then --// Couch with crouch walk etc
 		if crouching == false then
 			Crouch:Play()
 			Humanoid.WalkSpeed = 7
@@ -276,7 +277,7 @@ UserInputService.InputBegan:Connect(function(inputObject, gc)
 		end
 	end
 end)
-UserInputService.InputEnded:Connect(function(inputObject, gc)
+UserInputService.InputEnded:Connect(function(inputObject, gc) --// Input Ended, End the key created
 	if gc then return end
 	task.spawn(function()
 		local a = inputObject.KeyCode
@@ -286,7 +287,7 @@ UserInputService.InputEnded:Connect(function(inputObject, gc)
 		end
 	end)
 end)
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function() --// Tilting
 	Force = hrp.Velocity * Vector3.new(1,0,1)
 	if Force.Magnitude > 2 then
 		Direction = Force.Unit
@@ -298,3 +299,6 @@ RunService.RenderStepped:Connect(function()
 	end
 	RootJoint.C0 = RootJoint.C0:Lerp(RootJointC0 * CFrame.Angles(math.rad(-V2 * 10), math.rad(-V1 * 10), 0), 0.2)
 end)
+
+--// Okay thank you, I hope you understood all of it. This is just to verify coding skills on Hidden Developers.
+--// Created by husya.com (Yuki-Sam-Snow)
